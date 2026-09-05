@@ -1,0 +1,46 @@
+name: Stock Signal Agent
+
+on:
+  schedule:
+    # 7:00 JST (平日) = 22:00 UTC (日〜木)
+    - cron: '0 22 * * 0-4'
+    # 12:00 JST (平日) = 03:00 UTC (月〜金)
+    - cron: '0 3 * * 1-5'
+    # 18:00 JST (平日) = 09:00 UTC (月〜金)
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch: {}  # 手動実行用
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JQUANTS_REFRESH_TOKEN: ${{ secrets.JQUANTS_REFRESH_TOKEN }}
+          NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          NOTIFY_WEBHOOK_TYPE: ${{ vars.NOTIFY_WEBHOOK_TYPE }}  # "slack" or "discord"
+        run: python -m src.main
+
+      - name: Commit updated docs and state
+        run: |
+          git config user.name "stock-signal-agent-bot"
+          git config user.email "actions@github.com"
+          git add docs/ state/
+          git diff --staged --quiet || git commit -m "chore: update signal output [skip ci]"
+          git push

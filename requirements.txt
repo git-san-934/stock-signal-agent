@@ -1,0 +1,6 @@
+anthropic>=0.34.0
+requests>=2.31.0
+pytrends>=4.9.2
+jpholiday>=0.1.9
+beautifulsoup4>=4.12.0
+python-dateutil>=2.9.0
